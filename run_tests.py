@@ -23,7 +23,12 @@ from typing import List, Dict, Tuple
 ROOT = os.path.abspath(os.path.dirname(__file__))
 IN_DIR = os.path.join(ROOT, 'tests', 'in')
 OUT_DIR = os.path.join(ROOT, 'tests', 'out')
-EXEC = os.path.join(ROOT, 'pa1')  # 假设可执行名为 pa1
+
+# 平台检测
+IS_WINDOWS = (os.name == 'nt')
+EXEC = os.path.join(ROOT, 'pa1.exe' if IS_WINDOWS else 'pa1')  # Windows 下执行 pa1.exe
+
+# 仅在非 Windows (macOS/Linux) 下需要用本地 clang 重新编译
 CLANG = '/opt/homebrew/Cellar/llvm/20.1.5/bin/clang++'
 CLANG_ARGS = [
     '-g','-O0','-fno-inline','-std=c++11','-fsanitize=address,leak,undefined',
@@ -56,6 +61,13 @@ def load_test_files() -> List[Tuple[int, str, str]]:
     return tests
 
 def build_executable() -> None:
+    """在非 Windows 平台编译；Windows 平台假定已手动生成 pa1.exe。"""
+    if IS_WINDOWS:
+        print('Skip build on Windows: 使用已存在的 pa1.exe')
+        if not os.path.isfile(EXEC):
+            print(f'未找到 {EXEC}，请先手动编译，例如: cl /Zi /W4 /EHsc /MDd /Fe:pa1.exe *.cpp', file=sys.stderr)
+            sys.exit(1)
+        return
     print('Compiling:')
     cpp_files = [os.path.join(ROOT, f) for f in os.listdir(ROOT) if f.endswith('.cpp')]
     if not cpp_files:
@@ -72,25 +84,23 @@ def build_executable() -> None:
 
 def run_single_test(in_file: str) -> str:
     env = os.environ.copy()
-    # 为 AddressSanitizer / LeakSanitizer 配置环境变量
-    # 若已有外部设置则不覆盖关键选项，采用更新合并方式。
-    default_asan = 'detect_leaks=1:color=always:abort_on_error=0:report_objects=0'
-    user_asan = env.get('ASAN_OPTIONS')
-    if user_asan:
-        # 合并不重复的键值
-        existing_keys = {kv.split('=')[0] for kv in user_asan.split(':') if '=' in kv}
-        merged = list(user_asan.split(':'))
-        for kv in default_asan.split(':'):
-            k = kv.split('=')[0] if '=' in kv else kv
-            if k not in existing_keys:
-                merged.append(kv)
-        env['ASAN_OPTIONS'] = ':'.join(merged)
-    else:
-        env['ASAN_OPTIONS'] = default_asan
-    # Leak sanitizer 抑制文件（若存在 lsan.supp）
-    supp_path = os.path.join(ROOT, 'lsan.supp')
-    if os.path.isfile(supp_path):
-        env.setdefault('LSAN_OPTIONS', f'suppressions={supp_path}')
+    if not IS_WINDOWS:
+        # 仅在非 Windows 平台尝试配置 sanitizer 选项
+        default_asan = 'detect_leaks=1:color=always:abort_on_error=0:report_objects=0'
+        user_asan = env.get('ASAN_OPTIONS')
+        if user_asan:
+            existing_keys = {kv.split('=')[0] for kv in user_asan.split(':') if '=' in kv}
+            merged = list(user_asan.split(':'))
+            for kv in default_asan.split(':'):
+                k = kv.split('=')[0] if '=' in kv else kv
+                if k not in existing_keys:
+                    merged.append(kv)
+            env['ASAN_OPTIONS'] = ':'.join(merged)
+        else:
+            env['ASAN_OPTIONS'] = default_asan
+        supp_path = os.path.join(ROOT, 'lsan.supp')
+        if os.path.isfile(supp_path):
+            env.setdefault('LSAN_OPTIONS', f'suppressions={supp_path}')
     try:
         with open(in_file, 'rb') as fin:
             proc = subprocess.run(
