@@ -1,17 +1,4 @@
 #!/usr/bin/env python3
-"""Test runner for pa1.
-
-功能:
-1. 读取 tests/in 与 tests/out 下的编号文件 (形如 1.txt, 2.txt ...)。
-2. 对每个输入以标准输入运行已编译可执行文件 ./pa1 (位于工作区根目录)。
-3. 捕获标准输出, 将第一次出现 "EOS" 之前的内容记为 Output[n]，其后内容记为 Extra[n]。
-4. 实时更新进度条: [====>.....] x% Running test n (单行刷新)。
-5. 比较 Output[n] 与 tests/out/n.txt 不同之处，输出差异 (逐行 diff)。统计 Success / Fail。
-6. 全部结束打印汇总: Finished, Success X, Fail Y。
-7. 询问是否查看额外信息 (Extra 部分)，若 y 则逐个打印。
-
-假设: tests/out 目录存在且文件名与 tests/in 对应。如果缺失则计为失败。
-"""
 
 from __future__ import annotations
 import os
@@ -120,14 +107,6 @@ def run_single_test(in_file: str) -> str:
     return proc.stdout.decode('utf-8', errors='replace')
 
 def split_output(raw: str) -> Tuple[str, str]:
-    """根据第一次出现包含"> 0"的菜单起始 (下一轮循环) 分段，最终再依据 EOS 切分。
-
-    逻辑:
-    - 程序每轮循环都会打印菜单, 以空行+Welcome开头, 最后一行是 "> " 或 ">"。
-    - 输入序列里包含 0 结束; 最后一次循环后的输出含 EOS。
-    - 用户需求: 以 EOS 前作为 Output，其后 Extra。若无 EOS 则全部归 Output。
-    此函数单纯做 EOS 切分 (需求指定), 但允许保留末尾 prompt 的额外空格。
-    """
     if 'EOS' in raw:
         pre, post = raw.split('EOS', 1)
         return pre, post
