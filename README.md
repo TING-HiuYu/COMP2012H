@@ -16,6 +16,20 @@ int main() {
 	return 0;
 }
 ```
+6. If you are using MacOS, you need to add a suppression due to the existance of false positive from the mem leak by dynamic linking:
+   - Create a `lsan.supp` file in the same directory
+   - Add following content:
+	```
+	leak:libobjc.A.dylib
+	leak:libxpc.dylib
+	leak:dyld
+	leak:libsystem_malloc.dylib
+	leak:libSystem.B.dylib
+	```
+   - In the terminal you are going to use to run the python script, execute:
+	```
+	export LSAN_OPTIONS=suppressions=lsan.supp
+	```
 
 # Running the tests
 
