@@ -8,6 +8,14 @@ This is a python script for batch run the tests in HKUST COMP 2012H programming 
 2. move all the test input to `tests/in`, all the test output to `test/out`, in the same directory of run_tests.py
 3. Set the `CLANG` variable in `run_tests.py` to your compiler path(e.g. g++ or clang++, if you dont sure just type `g++`)
 4. Set the `CLANG_ARGS` variable in `run_tests.py` to your compiler args, if you dont sure just copy-and-paste the `CPPFLAGS` in your makefile.
+5. add a placehold before `return 0` to let script know where to seperate normal output and memery report:
+```c++
+int main() {
+  /* existing code *?
+	std::cout << "EOS"; // <- add this line
+	return 0;
+}
+```
 
 # Running the tests
 
