@@ -11,7 +11,7 @@ This is a python script for batch run the tests in HKUST COMP 2012H programming 
 5. add a placehold before `return 0` to let script know where to seperate normal output and memery report:
 ```c++
 int main() {
-  /* existing code *?
+  /* existing code */
 	std::cout << "EOS"; // <- add this line
 	return 0;
 }
